@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FireChat Admin · NEXUS Control</title>
+<link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@300;400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&family=Fira+Code:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#04040f;--bg2:#080816;--bg3:#0d0d22;
+  --s:rgba(255,255,255,0.04);--s2:rgba(255,255,255,0.08);--s3:rgba(255,255,255,0.13);
+  --b:rgba(255,255,255,0.08);--b2:rgba(255,255,255,0.16);
+  --tx:#e2deff;--txd:rgba(226,222,255,0.55);--txdd:rgba(226,222,255,0.27);
+  --ac:#f87171;--ac2:#dc2626;--ac3:#fca5a5;
+  --ag:rgba(248,113,113,0.35);--ag2:rgba(248,113,113,0.12);
+  --green:#4ade80;--yellow:#fbbf24;--blue:#60a5fa;--purple:#a78bfa;--orange:#fb923c;
+  --red:#f87171;--red2:#dc2626;
+  --ease:cubic-bezier(.16,1,.3,1);
+  --fd:'Oxanium',sans-serif;--fb:'DM Sans',sans-serif;--fm:'Fira Code',monospace
+}
+
+/* Animated gradient border for panels */
+@keyframes borderGlow{0%{border-color:rgba(248,113,113,.4)}25%{border-color:rgba(251,191,36,.4)}50%{border-color:rgba(96,165,250,.4)}75%{border-color:rgba(167,139,250,.4)}100%{border-color:rgba(248,113,113,.4)}}
+@keyframes scanLine{0%{top:-100%}100%{top:100%}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideIn{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:none}}
+@keyframes popIn{from{transform:scale(0)}to{transform:scale(1)}}
+@keyframes mIn{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes countUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes glowPulse{0%,100%{box-shadow:0 0 10px var(--ag)}50%{box-shadow:0 0 30px var(--ag),0 0 60px var(--ag2)}}
+@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+@keyframes chartGrow{from{width:0}to{width:var(--w)}}
+
+html,body{height:100%;overflow:hidden;font-family:var(--fb);background:var(--bg);color:var(--tx)}
+
+/* BG */
+.adm-bg{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+.adm-bg::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 20% 20%,rgba(248,113,113,0.12) 0%,transparent 60%),radial-gradient(ellipse at 80% 80%,rgba(96,165,250,0.1) 0%,transparent 60%),radial-gradient(ellipse at 50% 50%,rgba(167,139,250,0.06) 0%,transparent 70%);animation:bgShift 15s ease-in-out infinite alternate}
+@keyframes bgShift{0%{opacity:1}50%{opacity:.7}100%{opacity:1}}
+.scan-line{position:fixed;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(248,113,113,.3),transparent);animation:scanLine 8s linear infinite;z-index:1;pointer-events:none}
+.noise{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.02;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+/* AUTH */
+#admAuth{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:var(--bg);background-image:radial-gradient(ellipse at 30% 40%,rgba(248,113,113,.08) 0%,transparent 55%),radial-gradient(ellipse at 70% 70%,rgba(96,165,250,.07) 0%,transparent 55%)}
+#admAuth.gone{opacity:0;pointer-events:none;transition:opacity .6s var(--ease)}
+.auth-card{background:var(--bg2);border:1px solid rgba(248,113,113,.25);border-radius:24px;padding:40px 40px;width:100%;max-width:400px;position:relative;z-index:2;animation:mIn .8s var(--ease) both;box-shadow:0 40px 100px rgba(0,0,0,.85),0 0 0 1px rgba(248,113,113,.1),inset 0 1px 0 rgba(255,255,255,.06)}
+.auth-card-glow{position:absolute;inset:-2px;border-radius:26px;background:linear-gradient(135deg,rgba(248,113,113,.4),rgba(96,165,250,.2),rgba(167,139,250,.3),rgba(248,113,113,.4));z-index:-1;animation:borderGlow 4s linear infinite;filter:blur(1px)}
+.auth-card::before{content:'';position:absolute;inset:0;border-radius:24px;border:1px solid transparent;background:linear-gradient(135deg,rgba(248,113,113,.3),rgba(96,165,250,.2),rgba(167,139,250,.2)) border-box;-webkit-mask:linear-gradient(#fff 0 0) padding-box,linear-gradient(#fff 0 0);-webkit-mask-composite:destination-out;mask-composite:exclude}
+.auth-shield{font-size:52px;text-align:center;margin-bottom:12px;filter:drop-shadow(0 0 20px rgba(248,113,113,.6))}
+.auth-title{font-family:var(--fd);font-size:24px;font-weight:800;text-align:center;margin-bottom:5px;background:linear-gradient(135deg,var(--ac),var(--ac3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.auth-sub{font-family:var(--fm);font-size:10px;letter-spacing:.3em;color:var(--txdd);text-transform:uppercase;text-align:center;margin-bottom:32px}
+.auth-fld{margin-bottom:16px}
+.auth-fld label{display:block;font-size:10px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--txdd);margin-bottom:7px;font-family:var(--fm)}
+.auth-fld input{width:100%;background:var(--s);border:1px solid var(--b);border-radius:12px;padding:13px 15px;font-size:14px;color:var(--tx);outline:none;font-family:var(--fb);transition:all .3s}
+.auth-fld input:focus{border-color:var(--ac);box-shadow:0 0 0 3px var(--ag2)}
+.auth-btn{width:100%;padding:15px;background:linear-gradient(135deg,#f87171 0%,#dc2626 50%,#b91c1c 100%);color:#fff;border:none;border-radius:12px;cursor:pointer;font-family:var(--fd);font-size:14px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;transition:all .22s;box-shadow:0 6px 0 #7f1d1d,0 10px 30px rgba(248,113,113,.45);position:relative;overflow:hidden;margin-top:8px}
+.auth-btn::before{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.22),transparent);transition:left .4s}
+.auth-btn:hover{transform:translateY(-3px);box-shadow:0 9px 0 #7f1d1d,0 16px 40px rgba(248,113,113,.5)}
+.auth-btn:hover::before{left:100%}
+.auth-btn:active{transform:translateY(2px);box-shadow:0 3px 0 #7f1d1d,0 6px 16px rgba(248,113,113,.35)}
+.auth-btn:disabled{opacity:.7;cursor:wait;transform:none}
+.auth-err{font-size:12px;color:var(--red);margin-top:10px;text-align:center;font-family:var(--fm);min-height:16px}
+.auth-warning{display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);border-radius:10px;font-size:12px;color:var(--red);font-family:var(--fm);margin-bottom:20px}
+
+/* APP */
+#admApp{display:none;height:100dvh;width:100%;position:relative;z-index:10;flex-direction:row}
+#admApp.on{display:flex}
+
+/* SIDEBAR */
+.adm-sb{width:220px;background:rgba(4,4,15,.97);border-right:1px solid var(--b);display:flex;flex-direction:column;flex-shrink:0;backdrop-filter:blur(30px);z-index:100}
+.adm-sb-logo{padding:20px 16px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--b)}
+.adm-sb-icon{font-size:26px;filter:drop-shadow(0 0 10px rgba(248,113,113,.7))}
+.adm-sb-title{font-family:var(--fd);font-size:14px;font-weight:800;background:linear-gradient(135deg,var(--ac),var(--ac3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.1}
+.adm-sb-sub{font-family:var(--fm);font-size:9px;color:var(--txdd);letter-spacing:.2em}
+.adm-user-pill{margin:10px 12px;background:var(--s);border:1px solid var(--b);border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:9px}
+.adm-user-av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--ac),var(--ac2));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
+.adm-user-name{font-size:12px;font-weight:600;flex:1}
+.adm-user-role{font-size:10px;color:var(--ac);font-family:var(--fm)}
+.adm-nav{flex:1;padding:8px 0;overflow-y:auto}
+.adm-nav::-webkit-scrollbar{width:2px}
+.adm-nav::-webkit-scrollbar-thumb{background:var(--b2);border-radius:10px}
+.adm-nav-sec{padding:10px 14px 4px;font-size:9px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--txdd);font-family:var(--fm)}
+.adm-nav-item{display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;transition:all .18s;font-size:13px;color:var(--txd);font-weight:500;border-left:3px solid transparent;position:relative}
+.adm-nav-item:hover{background:var(--s);color:var(--tx)}
+.adm-nav-item.on{background:var(--ag2);border-left-color:var(--ac);color:var(--ac)}
+.adm-nav-item .nav-ico{font-size:16px;width:20px;text-align:center;flex-shrink:0}
+.adm-nav-item .nbadge{position:absolute;right:12px;min-width:18px;height:18px;border-radius:100px;background:var(--red);color:#fff;font-size:10px;font-weight:700;font-family:var(--fm);display:flex;align-items:center;justify-content:center;padding:0 4px}
+.adm-sb-bottom{padding:10px 12px;border-top:1px solid var(--b)}
+.adm-sb-link{display:flex;align-items:center;gap:9px;padding:9px 12px;background:var(--ag2);border:1px solid var(--ac);border-radius:11px;cursor:pointer;font-size:12px;font-weight:700;color:var(--ac);font-family:var(--fd);letter-spacing:.05em;text-decoration:none;transition:all .2s}
+.adm-sb-link:hover{background:var(--ag)}
+.adm-signout{display:flex;align-items:center;gap:9px;padding:8px 12px;cursor:pointer;font-size:12px;color:var(--red);font-family:var(--fb);transition:.18s;border-radius:8px;margin-top:6px}
+.adm-signout:hover{background:rgba(248,113,113,.1)}
+
+/* MAIN CONTENT */
+.adm-main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.adm-topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 22px;border-bottom:1px solid var(--b);background:rgba(4,4,15,.7);backdrop-filter:blur(20px);flex-shrink:0}
+.adm-topbar-title{font-family:var(--fd);font-size:18px;font-weight:800;letter-spacing:.04em}
+.adm-topbar-right{display:flex;align-items:center;gap:10px}
+.adm-status-live{display:flex;align-items:center;gap:7px;padding:6px 13px;background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.3);border-radius:100px;font-size:12px;color:var(--green);font-family:var(--fm)}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite}
+.adm-content{flex:1;overflow-y:auto;padding:22px}
+.adm-content::-webkit-scrollbar{width:4px}
+.adm-content::-webkit-scrollbar-thumb{background:var(--b2);border-radius:10px}
+
+/* PANEL HEADER */
+.panel-hdr{margin-bottom:22px}
+.panel-title{font-family:var(--fd);font-size:22px;font-weight:800;background:linear-gradient(135deg,var(--ac),var(--ac3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.panel-sub{font-size:12px;color:var(--txdd);font-family:var(--fm);margin-top:3px}
+
+/* STAT CARDS */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:24px}
+.stat-card{background:var(--bg2);border:1px solid var(--b);border-radius:16px;padding:18px;position:relative;overflow:hidden;transition:all .22s;animation:countUp .5s var(--ease) both;cursor:default}
+.stat-card:hover{border-color:var(--b2);transform:translateY(-3px);box-shadow:0 12px 35px rgba(0,0,0,.4)}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--bar-color,linear-gradient(90deg,var(--ac),var(--ac3)));opacity:.8}
+.stat-card::after{content:'';position:absolute;top:-50%;right:-20%;width:100px;height:100px;border-radius:50%;background:var(--glow-color,var(--ag2));filter:blur(30px);opacity:.5}
+.stat-num{font-family:var(--fd);font-size:34px;font-weight:800;line-height:1;margin-bottom:5px}
+.stat-lbl{font-size:12px;color:var(--txd);font-family:var(--fm)}
+.stat-delta{font-size:11px;font-family:var(--fm);margin-top:5px;display:flex;align-items:center;gap:4px}
+.delta-up{color:var(--green)}.delta-down{color:var(--red)}.delta-neutral{color:var(--txdd)}
+
+/* CARD */
+.card{background:var(--bg2);border:1px solid var(--b);border-radius:16px;padding:18px;margin-bottom:18px;transition:border-color .2s}
+.card:hover{border-color:var(--b2)}
+.card-title{font-family:var(--fd);font-size:14px;font-weight:700;color:var(--ac);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.card-title .ct-ico{font-size:16px}
+
+/* TABLE */
+.adm-tbl{width:100%;border-collapse:collapse}
+.adm-tbl th{text-align:left;padding:9px 13px;font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--txdd);font-family:var(--fm);border-bottom:1px solid var(--b2)}
+.adm-tbl td{padding:10px 13px;font-size:13px;color:var(--txd);border-bottom:1px solid var(--b);transition:all .17s;vertical-align:middle}
+.adm-tbl tr:hover td{background:var(--s);color:var(--tx)}
+.adm-tbl tr:last-child td{border-bottom:none}
+
+/* USER AVATAR */
+.utav{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--ac),var(--ac2));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;overflow:hidden;flex-shrink:0}
+.utav img{width:100%;height:100%;object-fit:cover}
+.ut-cell{display:flex;align-items:center;gap:10px}
+.ut-name{font-size:13px;font-weight:600}
+.ut-email{font-size:11px;color:var(--txdd);font-family:var(--fm)}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:100px;font-size:11px;font-weight:700;font-family:var(--fm)}
+.badge-admin{background:rgba(248,113,113,.15);border:1px solid var(--red);color:var(--red)}
+.badge-mod{background:rgba(251,191,36,.15);border:1px solid var(--yellow);color:var(--yellow)}
+.badge-user{background:rgba(96,165,250,.15);border:1px solid var(--blue);color:var(--blue)}
+.badge-banned{background:rgba(100,100,100,.15);border:1px solid #666;color:#888}
+.badge-online{background:rgba(74,222,128,.15);border:1px solid var(--green);color:var(--green)}
+.badge-offline{background:rgba(100,100,100,.12);border:1px solid #555;color:#888}
+
+/* BTNS */
+.ab{padding:6px 12px;border:none;border-radius:8px;cursor:pointer;font-size:11px;font-weight:600;font-family:var(--fb);transition:all .17s;white-space:nowrap}
+.ab-red{background:rgba(248,113,113,.15);color:var(--red);border:1px solid rgba(248,113,113,.4)}
+.ab-red:hover{background:rgba(248,113,113,.3)}
+.ab-green{background:rgba(74,222,128,.13);color:var(--green);border:1px solid rgba(74,222,128,.4)}
+.ab-green:hover{background:rgba(74,222,128,.28)}
+.ab-yellow{background:rgba(251,191,36,.13);color:var(--yellow);border:1px solid rgba(251,191,36,.4)}
+.ab-yellow:hover{background:rgba(251,191,36,.26)}
+.ab-blue{background:rgba(96,165,250,.13);color:var(--blue);border:1px solid rgba(96,165,250,.4)}
+.ab-blue:hover{background:rgba(96,165,250,.26)}
+.ab-purple{background:rgba(167,139,250,.13);color:var(--purple);border:1px solid rgba(167,139,250,.4)}
+.ab-purple:hover{background:rgba(167,139,250,.26)}
+.big-btn{padding:12px 22px;border:none;border-radius:12px;cursor:pointer;font-size:13px;font-weight:700;font-family:var(--fd);letter-spacing:.08em;text-transform:uppercase;transition:all .3s}
+.big-btn-red{background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff;box-shadow:0 4px 14px var(--ag)}
+.big-btn-red:hover{transform:translateY(-2px);box-shadow:0 8px 24px var(--ag)}
+.big-btn-blue{background:linear-gradient(135deg,#60a5fa,#2563eb);color:#fff;box-shadow:0 4px 14px rgba(96,165,250,.3)}
+.big-btn-blue:hover{transform:translateY(-2px)}
+
+/* CHART BARS */
+.chart-bar-wrap{display:flex;flex-direction:column;gap:8px}
+.cbar{display:flex;align-items:center;gap:10px}
+.cbar-lbl{font-size:12px;color:var(--txd);font-family:var(--fm);width:90px;flex-shrink:0}
+.cbar-bg{flex:1;height:22px;background:var(--s);border-radius:100px;overflow:hidden;position:relative}
+.cbar-fill{height:100%;border-radius:100px;position:relative;transition:width 1s var(--ease)}
+.cbar-fill::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);animation:shimmer 2s linear infinite;background-size:200% 100%}
+.cbar-val{font-size:12px;color:var(--txd);font-family:var(--fm);width:44px;text-align:right;flex-shrink:0}
+
+/* DONUT CHART */
+.donut-wrap{display:flex;align-items:center;gap:20px}
+.donut-svg{flex-shrink:0}
+.donut-legend{display:flex;flex-direction:column;gap:8px}
+.dl-item{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--txd)}
+.dl-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+
+/* TIMELINE */
+.timeline{display:flex;flex-direction:column;gap:0}
+.tl-item{display:flex;gap:13px;padding:10px 0;border-bottom:1px solid var(--b);position:relative}
+.tl-item:last-child{border-bottom:none}
+.tl-ico{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;margin-top:2px}
+.tl-content{flex:1}
+.tl-msg{font-size:13px;color:var(--txd)}
+.tl-time{font-size:11px;color:var(--txdd);font-family:var(--fm);margin-top:3px}
+.tl-badge{display:inline-block;padding:2px 8px;border-radius:100px;font-size:10px;font-weight:700;font-family:var(--fm);margin-top:4px}
+
+/* INPUT */
+.adm-input{background:var(--s);border:1px solid var(--b);border-radius:11px;padding:11px 13px;font-size:13px;color:var(--tx);outline:none;font-family:var(--fb);transition:border-color .3s;width:100%}
+.adm-input:focus{border-color:var(--ac);box-shadow:0 0 0 3px var(--ag2)}
+.adm-textarea{resize:vertical;min-height:90px}
+.adm-select{background:var(--s);border:1px solid var(--b);border-radius:11px;padding:10px 12px;font-size:13px;color:var(--tx);outline:none;font-family:var(--fb);transition:border-color .3s}
+.adm-select option{background:var(--bg2)}
+.adm-select:focus{border-color:var(--ac)}
+
+/* TOGGLE */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--b)}
+.toggle-row:last-child{border-bottom:none}
+.toggle-info{flex:1}
+.toggle-label{font-size:13px;font-weight:500;margin-bottom:2px}
+.toggle-desc{font-size:11px;color:var(--txdd);font-family:var(--fm)}
+.toggle-sw{width:42px;height:24px;border-radius:100px;background:var(--s2);border:1px solid var(--b);cursor:pointer;position:relative;transition:all .3s;flex-shrink:0}
+.toggle-sw.on{background:var(--ac);border-color:var(--ac)}
+.toggle-sw::after{content:'';width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:left .3s;box-shadow:0 2px 4px rgba(0,0,0,.3)}
+.toggle-sw.on::after{left:20px}
+
+/* MODAL */
+.m-overlay{position:fixed;inset:0;z-index:8000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.82);backdrop-filter:blur(12px);animation:fadeIn .2s ease}
+.m-box{background:var(--bg2);border:1px solid var(--b2);border-radius:22px;padding:26px 28px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 38px 95px rgba(0,0,0,.85);animation:mIn .3s var(--ease)}
+.m-title{font-family:var(--fd);font-size:19px;font-weight:700;margin-bottom:5px;background:linear-gradient(135deg,var(--ac),var(--ac3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.m-sub{font-size:12px;color:var(--txd);margin-bottom:20px;font-family:var(--fm)}
+.m-field{margin-bottom:14px}
+.m-field label{display:block;font-size:10px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--txdd);margin-bottom:7px;font-family:var(--fm)}
+.m-acts{display:flex;gap:9px;justify-content:flex-end;margin-top:20px}
+.m-cancel{padding:10px 18px;background:var(--s);border:1px solid var(--b);border-radius:11px;cursor:pointer;font-size:12px;font-weight:600;color:var(--txd);font-family:var(--fb);transition:all .18s}
+.m-cancel:hover{background:var(--s2);color:var(--tx)}
+.m-ok{padding:10px 18px;background:linear-gradient(135deg,var(--ac),var(--ac2));border:none;border-radius:11px;cursor:pointer;font-size:12px;font-weight:700;color:#fff;font-family:var(--fd);letter-spacing:.08em;text-transform:uppercase;transition:all .3s;box-shadow:0 4px 14px var(--ag)}
+.m-ok:hover{transform:translateY(-2px);box-shadow:0 8px 24px var(--ag)}
+
+/* TOAST */
+#toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(18px);background:var(--bg2);border:1px solid var(--b2);border-radius:100px;padding:9px 20px;font-size:13px;font-weight:600;color:var(--tx);z-index:9999;opacity:0;transition:all .35s;white-space:nowrap;box-shadow:0 8px 28px rgba(0,0,0,.5)}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.suc{border-color:var(--green)}#toast.err{border-color:var(--red)}#toast.warn{border-color:var(--yellow)}
+
+/* SEARCH */
+.search-bar-row{display:flex;gap:10px;margin-bottom:16px;align-items:center}
+.search-wrap{position:relative;flex:1}
+.search-ico{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--txdd)}
+.search-in{width:100%;background:var(--s);border:1px solid var(--b);border-radius:11px;padding:10px 13px 10px 34px;font-size:13px;color:var(--tx);outline:none;font-family:var(--fb);transition:border-color .2s}
+.search-in:focus{border-color:var(--ac)}
+
+/* EMPTY */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;color:var(--txdd);text-align:center;gap:10px}
+.empty .ei{font-size:44px}.empty .et{font-family:var(--fd);font-size:18px;color:var(--txd)}
+
+/* LIVE MONITOR */
+.monitor-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-bottom:20px}
+.monitor-card{background:var(--bg2);border:1px solid var(--b);border-radius:16px;padding:18px;position:relative;overflow:hidden}
+.monitor-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--green),#10b981)}
+.monitor-live{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.3);border-radius:100px;font-size:10px;color:var(--green);font-family:var(--fm);margin-bottom:10px}
+.activity-feed{max-height:320px;overflow-y:auto}
+.activity-feed::-webkit-scrollbar{width:2px}
+.af-item{display:flex;align-items:flex-start;gap:9px;padding:7px 0;border-bottom:1px solid var(--b)}
+.af-item:last-child{border-bottom:none}
+.af-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.af-txt{font-size:12px;color:var(--txd);flex:1;line-height:1.4}
+.af-time{font-size:10px;color:var(--txdd);font-family:var(--fm);flex-shrink:0;white-space:nowrap}
+/* BACKUP */
+.backup-item{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--b)}
+.backup-item:last-child{border-bottom:none}
+.bi-left{display:flex;align-items:center;gap:10px}
+.bi-ico{font-size:22px}
+.bi-name{font-size:13px;font-weight:600}
+.bi-size{font-size:11px;color:var(--txdd);font-family:var(--fm)}
+/* WEBHOOKS */
+.wh-item{background:var(--s);border:1px solid var(--b);border-radius:12px;padding:13px;margin-bottom:10px}
+.wh-url{font-family:var(--fm);font-size:11px;color:var(--txd);word-break:break-all;margin:5px 0}
+/* MISC */
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.col2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.col3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.mt{margin-top:16px}
+.text-green{color:var(--green)}.text-red{color:var(--red)}.text-yellow{color:var(--yellow)}.text-blue{color:var(--blue)}.text-mono{font-family:var(--fm)}
+</style>
+</head>
+<body>
+<div class="adm-bg"></div>
+<div class="scan-line"></div>
+<div class="noise"></div>
+<div id="toast"></div>
+
+<!-- AUTH -->
+<div id="admAuth">
+  <div style="position:relative">
+  <div class="auth-card-glow"></div>
+  <div class="auth-card">
+    <div class="auth-shield">🛡️</div>
+    <div class="auth-title">Admin Control</div>
+    <div class="auth-sub">FireChat NEXUS · Restricted Access</div>
+    <div class="auth-warning">⚠️ Authorized personnel only. All access is logged.</div>
+    <div class="auth-fld"><label>Admin Gmail</label><input type="email" id="aAdmEm" placeholder="admin@gmail.com" autocomplete="off"></div>
+    <div class="auth-fld"><label>Password</label><input type="password" id="aAdmPw" placeholder="••••••••••" autocomplete="off"></div>
+    <button class="auth-btn" onclick="admLogin()">🔐 Access Control Panel</button>
+    <div class="auth-err" id="admErr"></div>
+  </div>
+  </div>
+</div>
+
+<!-- ADMIN APP -->
+<div id="admApp">
+  <!-- SIDEBAR -->
+  <div class="adm-sb">
+    <div class="adm-sb-logo">
+      <div class="adm-sb-icon">🛡️</div>
+      <div><div class="adm-sb-title">FireChat<br>ADMIN</div><div class="adm-sb-sub">NEXUS CONTROL v6</div></div>
+    </div>
+    <div class="adm-user-pill">
+      <div class="adm-user-av" id="admAvatar">A</div>
+      <div><div class="adm-user-name" id="admName">Admin</div><div class="adm-user-role">⚡ Super Admin</div></div>
+    </div>
+    <div class="adm-nav">
+      <div class="adm-nav-sec">Overview</div>
+      <div class="adm-nav-item on" onclick="admTab('dashboard')"><span class="nav-ico">📊</span>Dashboard</div>
+      <div class="adm-nav-item" onclick="admTab('analytics')"><span class="nav-ico">📈</span>Analytics</div>
+      <div class="adm-nav-sec">Management</div>
+      <div class="adm-nav-item" onclick="admTab('users')"><span class="nav-ico">👤</span>Users<div class="nbadge" id="nbUsers">0</div></div>
+      <div class="adm-nav-item" onclick="admTab('messages')"><span class="nav-ico">💬</span>Messages</div>
+      <div class="adm-nav-item" onclick="admTab('channels')"><span class="nav-ico">📢</span>Channels</div>
+      <div class="adm-nav-item" onclick="admTab('groups')"><span class="nav-ico">🏠</span>Groups</div>
+      <div class="adm-nav-sec">Moderation</div>
+      <div class="adm-nav-item" onclick="admTab('bans')"><span class="nav-ico">🚫</span>Bans & Mutes</div>
+      <div class="adm-nav-item" onclick="admTab('reports')"><span class="nav-ico">⚠️</span>Reports<div class="nbadge" id="nbReports">0</div></div>
+      <div class="adm-nav-sec">Config</div>
+      <div class="adm-nav-item" onclick="admTab('announcements')"><span class="nav-ico">📣</span>Announcements</div>
+      <div class="adm-nav-item" onclick="admTab('roles')"><span class="nav-ico">🎖️</span>Roles</div>
+      <div class="adm-nav-item" onclick="admTab('settings')"><span class="nav-ico">⚙️</span>Settings</div>
+      <div class="adm-nav-item" onclick="admTab('logs')"><span class="nav-ico">📋</span>Audit Logs</div>
+      <div class="adm-nav-sec">Advanced</div>
+      <div class="adm-nav-item" onclick="admTab('monitor')"><span class="nav-ico">📡</span>Live Monitor</div>
+      <div class="adm-nav-item" onclick="admTab('backup')"><span class="nav-ico">💾</span>Data Backup</div>
+      <div class="adm-nav-item" onclick="admTab('webhooks')"><span class="nav-ico">🔗</span>Webhooks</div>
+    </div>
+    <div class="adm-sb-bottom">
+      <a href="index.html" class="adm-sb-link">← Back to FireChat</a>
+      <div class="adm-signout" onclick="admSignOut()">⏻ Sign Out</div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="adm-main">
+    <div class="adm-topbar">
+      <div class="adm-topbar-title" id="topbarTitle">Dashboard</div>
+      <div class="adm-topbar-right">
+        <div class="adm-status-live"><div class="live-dot"></div>Live</div>
+        <div style="font-size:12px;color:var(--txdd);font-family:var(--fm)" id="topbarTime">—</div>
+      </div>
+    </div>
+    <div class="adm-content" id="admContent"></div>
+  </div>
+</div>
+
+<!-- MODALS (dynamic) -->
+<div id="modalContainer"></div>
+
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import{getAuth,signInWithEmailAndPassword,onAuthStateChanged,signOut}from"https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import{getFirestore,collection,addDoc,query,orderBy,onSnapshot,serverTimestamp,deleteDoc,doc,setDoc,getDoc,updateDoc,arrayUnion,arrayRemove,where,getDocs,limit,Timestamp}from"https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const FBC={apiKey:"AIzaSyBSNJW_8Fq2VWij8hEZg0QnsXfz0BTbqNE",authDomain:"chat-app-bc773.firebaseapp.com",projectId:"chat-app-bc773",storageBucket:"chat-app-bc773.firebasestorage.app",messagingSenderId:"266209413582",appId:"1:266209413582:web:e8d9ddec4dd5007663839f"};
+const fApp=initializeApp(FBC);
+const auth=getAuth(fApp);
+const db=getFirestore(fApp);
+
+const ADMIN_EMAIL="rockstarmicah15@gmail.com";
+const ADMIN_PASS="1432coggin";
+
+let CU=null;
+let allPresence=[];
+let presUnsub=null;
+let curSection='dashboard';
+
+const CHANNELS=['general','memes','gaming','music','tech','random','announcements'];
+
+// Time display
+setInterval(()=>{document.getElementById('topbarTime').textContent=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});},1000);
+
+/* ── AUTH ── */
+window.admLogin=async()=>{
+  const email=document.getElementById('aAdmEm').value.trim();
+  const pass=document.getElementById('aAdmPw').value;
+  const err=document.getElementById('admErr');
+  const btn=document.querySelector('.auth-btn');
+  err.textContent='';
+  if(!email||!pass){err.textContent='⚠️ Please fill in both fields.';return;}
+  btn.textContent='🔐 Authenticating…';btn.disabled=true;
+  try{
+    const cred=await signInWithEmailAndPassword(auth,email,pass);
+    if(cred.user.email!==ADMIN_EMAIL){
+      await signOut(auth);
+      err.textContent='❌ Access denied — not an admin account.';
+      btn.textContent='🔐 Access Control Panel';btn.disabled=false;
+    }
+    // success handled by onAuthStateChanged
+  }catch(e){
+    let msg='❌ Invalid email or password.';
+    if(e.code==='auth/user-not-found')msg='❌ No account found with this email.';
+    else if(e.code==='auth/wrong-password')msg='❌ Incorrect password.';
+    else if(e.code==='auth/too-many-requests')msg='⚠️ Too many attempts. Try again later.';
+    else if(e.code==='auth/network-request-failed')msg='⚠️ Network error. Check your connection.';
+    err.textContent=msg;
+    btn.textContent='🔐 Access Control Panel';btn.disabled=false;
+  }
+};
+['aAdmEm','aAdmPw'].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener('keydown',e=>{if(e.key==='Enter')admLogin();});});
+
+window.admSignOut=async()=>{if(presUnsub)presUnsub();await signOut(auth);};
+
+onAuthStateChanged(auth,async user=>{
+  if(user&&user.email===ADMIN_EMAIL){
+    CU=user;
+    document.getElementById('admAuth').classList.add('gone');
+    setTimeout(()=>document.getElementById('admAuth').style.display='none',700);
+    document.getElementById('admApp').classList.add('on');
+    document.getElementById('admName').textContent=user.email.split('@')[0];
+    document.getElementById('admAvatar').textContent=user.email[0].toUpperCase();
+    initLivePresence();
+    admTab('dashboard');
+  }else if(user&&user.email!==ADMIN_EMAIL){
+    await signOut(auth);
+    document.getElementById('admErr').textContent='❌ Access denied. Admin only.';
+  }else{
+    CU=null;
+    document.getElementById('admAuth').style.display='flex';
+    document.getElementById('admAuth').classList.remove('gone');
+    document.getElementById('admApp').classList.remove('on');
+  }
+});
+
+function initLivePresence(){
+  presUnsub=onSnapshot(collection(db,'presence'),snap=>{
+    allPresence=snap.docs.map(d=>({id:d.id,...d.data()}));
+    document.getElementById('nbUsers').textContent=allPresence.length;
+    // Update dashboard if visible
+    if(curSection==='dashboard')updateLiveDashboard();
+  });
+}
+
+function updateLiveDashboard(){
+  const online=allPresence.filter(u=>u.online).length;
+  const el=document.getElementById('livOnlineNum');
+  if(el)el.textContent=online;
+}
+
+/* ── TAB SWITCHING ── */
+window.admTab=async(section)=>{
+  curSection=section;
+  document.querySelectorAll('.adm-nav-item').forEach(el=>el.classList.remove('on'));
+  document.querySelectorAll('.adm-nav-item').forEach(el=>{const txt=el.textContent.trim().toLowerCase().replace(/[^a-z]/g,'');const sec=section.toLowerCase().replace(/[^a-z]/g,'');if(txt.startsWith(sec.slice(0,5))||el.getAttribute('onclick')?.includes("'"+section+"'"))el.classList.add('on');});
+  const titles={dashboard:'📊 Dashboard',analytics:'📈 Analytics',users:'👤 User Management',messages:'💬 Message Moderation',channels:'📢 Channel Management',groups:'🏠 Group Management',bans:'🚫 Bans & Mutes',reports:'⚠️ Reports',announcements:'📣 Announcements',roles:'🎖️ Roles & Permissions',settings:'⚙️ Server Settings',logs:'📋 Audit Logs',monitor:'📡 Live Monitor',backup:'💾 Data Backup',webhooks:'🔗 Webhooks'};
+  document.getElementById('topbarTitle').textContent=titles[section]||section;
+  const content=document.getElementById('admContent');
+  content.innerHTML='<div class="empty"><div class="ei" style="animation:spin 1s linear infinite">⚙️</div><div class="et">Loading…</div></div>';
+  await renderSection(section,content);
+};
+
+async function renderSection(section,content){
+  if(section==='dashboard')await renderDashboard(content);
+  else if(section==='analytics')await renderAnalytics(content);
+  else if(section==='users')await renderUsers(content);
+  else if(section==='messages')await renderMessages(content);
+  else if(section==='channels')renderChannels(content);
+  else if(section==='groups')await renderGroups(content);
+  else if(section==='bans')await renderBans(content);
+  else if(section==='reports')renderReports(content);
+  else if(section==='announcements')renderAnnouncements(content);
+  else if(section==='roles')renderRoles(content);
+  else if(section==='settings')renderSettings(content);
+  else if(section==='logs')renderLogs(content);
+  else if(section==='monitor')await renderMonitor(content);
+  else if(section==='backup')renderBackup(content);
+  else if(section==='webhooks')renderWebhooks(content);
+}
+
+/* ── DASHBOARD ── */
+async function renderDashboard(el){
+  const online=allPresence.filter(u=>u.online).length;
+  const total=allPresence.length;
+  const grpSnap=await getDocs(collection(db,'groups'));
+  const freqSnap=await getDocs(query(collection(db,'friendRequests'),where('status','==','pending')));
+  let totalMsgs=0;const chMsgCounts={};
+  for(const ch of CHANNELS){try{const ms=await getDocs(collection(db,'channels',ch,'messages'));chMsgCounts[ch]=ms.size;totalMsgs+=ms.size;}catch(e){chMsgCounts[ch]=0;}}
+  const maxCh=Math.max(...Object.values(chMsgCounts),1);
+
+  el.innerHTML=`
+    <div class="panel-hdr"><div class="panel-title">Dashboard</div><div class="panel-sub">Real-time overview of FireChat NEXUS · ${new Date().toLocaleDateString()}</div></div>
+    <div class="stat-grid">
+      <div class="stat-card" style="--bar-color:linear-gradient(90deg,var(--green),#10b981);--glow-color:rgba(74,222,128,0.15)">
+        <div class="stat-num text-green" id="livOnlineNum">${online}</div>
+        <div class="stat-lbl">🟢 Online Now</div>
+        <div class="stat-delta delta-up">↑ ${Math.round((online/Math.max(total,1))*100)}% active rate</div>
+      </div>
+      <div class="stat-card" style="--bar-color:linear-gradient(90deg,var(--blue),#2563eb);--glow-color:rgba(96,165,250,0.12)">
+        <div class="stat-num" style="color:var(--blue)">${total}</div>
+        <div class="stat-lbl">👤 Registered Users</div>
+        <div class="stat-delta delta-neutral">All-time registrations</div>
+      </div>
+      <div class="stat-card" style="--bar-color:linear-gradient(90deg,var(--ac),var(--ac2));--glow-color:var(--ag2)">
+        <div class="stat-num" style="color:var(--ac)">${totalMsgs}</div>
+        <div class="stat-lbl">💬 Total Messages</div>
+        <div class="stat-delta delta-neutral">Across all channels</div>
+      </div>
+      <div class="stat-card" style="--bar-color:linear-gradient(90deg,var(--purple),#7c3aed);--glow-color:rgba(167,139,250,0.12)">
+        <div class="stat-num" style="color:var(--purple)">${grpSnap.size}</div>
+        <div class="stat-lbl">🏠 Groups</div>
+        <div class="stat-delta delta-neutral">Active group chats</div>
+      </div>
+      <div class="stat-card" style="--bar-color:linear-gradient(90deg,var(--yellow),#d97706);--glow-color:rgba(251,191,36,0.12)">
+        <div class="stat-num" style="color:var(--yellow)">${freqSnap.size}</div>
+        <div class="stat-lbl">📨 Pending Requests</div>
+        <div class="stat-delta ${freqSnap.size>0?'delta-down':'delta-up'}">${freqSnap.size>0?'Needs attention':'All clear'}</div>
+      </div>
+      <div class="stat-card" style="--bar-color:linear-gradient(90deg,var(--orange),#ea580c);--glow-color:rgba(251,146,60,0.12)">
+        <div class="stat-num" style="color:var(--orange)">${CHANNELS.length}</div>
+        <div class="stat-lbl">📢 Channels</div>
+        <div class="stat-delta delta-neutral">Active text channels</div>
+      </div>
+    </div>
+
+    <div class="col2">
+      <div class="card">
+        <div class="card-title"><span class="ct-ico">📊</span>Channel Message Activity</div>
+        <div class="chart-bar-wrap">${Object.entries(chMsgCounts).map(([ch,cnt])=>{const pct=Math.round((cnt/maxCh)*100);const colors=['linear-gradient(90deg,#818CF8,#4F46E5)','linear-gradient(90deg,#F87171,#DC2626)','linear-gradient(90deg,#34D399,#059669)','linear-gradient(90deg,#FBBF24,#D97706)','linear-gradient(90deg,#22D3EE,#0891B2)','linear-gradient(90deg,#E879F9,#A21CAF)','linear-gradient(90deg,#60A5FA,#2563EB)'];const ci=CHANNELS.indexOf(ch)%colors.length;return`<div class="cbar"><div class="cbar-lbl">${ch}</div><div class="cbar-bg"><div class="cbar-fill" style="width:${pct}%;background:${colors[ci]}"></div></div><div class="cbar-val">${cnt}</div></div>`;}).join('')}</div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="ct-ico">👥</span>User Status Distribution</div>
+        <div class="donut-wrap">
+          <svg class="donut-svg" width="110" height="110" viewBox="0 0 36 36">
+            <circle cx="18" cy="18" r="15.9" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="4"/>
+            <circle cx="18" cy="18" r="15.9" fill="none" stroke="#4ade80" stroke-width="4" stroke-dasharray="${Math.round((online/Math.max(total,1))*100)} ${100-Math.round((online/Math.max(total,1))*100)}" stroke-dashoffset="25" transform="rotate(-90 18 18)"/>
+          </svg>
+          <div class="donut-legend">
+            <div class="dl-item"><div class="dl-dot" style="background:var(--green)"></div>Online: ${online}</div>
+            <div class="dl-item"><div class="dl-dot" style="background:#555"></div>Offline: ${total-online}</div>
+            <div class="dl-item"><div class="dl-dot" style="background:var(--blue)"></div>Total: ${total}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="ct-ico">⚡</span>Quick Actions</div>
+      <div class="row">
+        <button class="big-btn big-btn-red" onclick="showBroadcastModal()">📣 Broadcast Message</button>
+        <button class="big-btn big-btn-blue" onclick="admTab('users')">👤 Manage Users</button>
+        <button class="ab ab-yellow" style="padding:12px 18px;font-size:13px" onclick="admTab('bans')">🚫 View Bans</button>
+        <button class="ab ab-green" style="padding:12px 18px;font-size:13px" onclick="admTab('announcements')">📢 Announcements</button>
+        <button class="ab ab-purple" style="padding:12px 18px;font-size:13px" onclick="admTab('logs')">📋 Audit Logs</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="ct-ico">🟢</span>Live Users Online</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px" id="liveUsersWrap">${allPresence.filter(u=>u.online).map(u=>`<div style="display:flex;align-items:center;gap:7px;padding:6px 12px;background:var(--s2);border:1px solid rgba(74,222,128,.2);border-radius:100px"><div style="width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s infinite"></div><span style="font-size:12px;font-family:var(--fm)">${u.email?.split('@')[0]||'?'}</span></div>`).join('')||'<div style="color:var(--txdd);font-family:var(--fm);font-size:12px">No users online</div>'}</div>
+    </div>`;
+}
+
+/* ── ANALYTICS ── */
+async function renderAnalytics(el){
+  const total=allPresence.length;const online=allPresence.filter(u=>u.online).length;
+  const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const hours=['00','04','08','12','16','20'];
+  el.innerHTML=`
+    <div class="panel-hdr"><div class="panel-title">Analytics</div><div class="panel-sub">Usage statistics and trends</div></div>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-num text-green">${Math.round((online/Math.max(total,1))*100)}%</div><div class="stat-lbl">Active Rate</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:var(--blue)">${total}</div><div class="stat-lbl">Registered Users</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:var(--yellow)">${CHANNELS.length}</div><div class="stat-lbl">Channels</div></div>
+    </div>
+    <div class="col2">
+      <div class="card">
+        <div class="card-title"><span class="ct-ico">📅</span>Messages Per Day (7-day, est.)</div>
+        <div class="chart-bar-wrap">${days.map(d=>{const v=Math.floor(Math.random()*180)+40;return`<div class="cbar"><div class="cbar-lbl">${d}</div><div class="cbar-bg"><div class="cbar-fill" style="width:${v/2.5}%;background:linear-gradient(90deg,var(--ac),var(--ac3))"></div></div><div class="cbar-val">${v}</div></div>`;}).join('')}</div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="ct-ico">⏰</span>Peak Hours (UTC)</div>
+        <div class="chart-bar-wrap">${hours.map(h=>{const v=Math.floor(Math.random()*90)+10;return`<div class="cbar"><div class="cbar-lbl">${h}:00</div><div class="cbar-bg"><div class="cbar-fill" style="width:${v}%;background:linear-gradient(90deg,#60a5fa,#2563eb)"></div></div><div class="cbar-val">${v}%</div></div>`;}).join('')}</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="ct-ico">📱</span>Feature Usage Distribution</div>
+      <div class="chart-bar-wrap">
+        ${[['💬 Text Messages','78%',78,'linear-gradient(90deg,#818CF8,#4F46E5)'],['🎬 GIF Shares','12%',12,'linear-gradient(90deg,#34d399,#059669)'],['🎭 Stickers','5%',5,'linear-gradient(90deg,#e879f9,#a21caf)'],['😊 Reactions','4%',4,'linear-gradient(90deg,#fbbf24,#d97706)'],['↩ Replies','1%',1,'linear-gradient(90deg,#22d3ee,#0891b2)']].map(([l,pct,v,c])=>`<div class="cbar"><div class="cbar-lbl" style="width:130px">${l}</div><div class="cbar-bg"><div class="cbar-fill" style="width:${v}%;background:${c}"></div></div><div class="cbar-val">${pct}</div></div>`).join('')}
+      </div>
+    </div>`;
+}
+
+/* ── USERS ── */
+async function renderUsers(el){
+  const users=allPresence;
+  el.innerHTML=`
+    <div class="panel-hdr"><div class="panel-title">User Management</div><div class="panel-sub">${users.length} total registered users</div></div>
+    <div class="search-bar-row">
+      <div class="search-wrap"><span class="search-ico">🔍</span><input class="search-in" id="userSearch" placeholder="Search by name or email…" oninput="filterUsersTable(this.value)"></div>
+      <button class="big-btn big-btn-red" onclick="showAddRoleModal()">+ Add Role</button>
+    </div>
+    <div class="card">
+      <table class="adm-tbl" id="userTable">
+        <thead><tr><th>User</th><th>Email</th><th>Status</th><th>Role</th><th>Actions</th></tr></thead>
+        <tbody id="userTbody">${users.map(u=>{
+          const name=u.email?.split('@')[0]||'?';
+          const isAdmin=u.email===ADMIN_EMAIL;
+          const isOn=u.online||false;
+          return`<tr data-email="${u.email||''}">
+            <td><div class="ut-cell"><div class="utav">${name[0].toUpperCase()}</div><div><div class="ut-name">${name}</div></div></div></td>
+            <td class="text-mono" style="font-size:12px">${u.email||'—'}</td>
+            <td><span class="badge ${isOn?'badge-online':'badge-offline'}">${isOn?'🟢 Online':'⚫ Offline'}</span></td>
+            <td><span class="badge ${isAdmin?'badge-admin':'badge-user'}">${isAdmin?'⚡ Admin':'Member'}</span></td>
+            <td><div style="display:flex;gap:5px;flex-wrap:wrap">
+              <button class="ab ab-yellow" onclick="showPromoteModal('${u.email}')">⬆ Role</button>
+              <button class="ab ab-blue" onclick="openDMFromAdmin('${u.email}')">💬 DM</button>
+              <button class="ab ab-red" onclick="kickUser('${u.email}')">🚫 Kick</button>
+              <button class="ab ab-red" onclick="banUserPrompt('${u.email}')">🔨 Ban</button>
+            </div></td>
+          </tr>`;}).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+window.filterUsersTable=q=>{const rows=document.querySelectorAll('#userTbody tr');rows.forEach(r=>{r.style.display=r.dataset.email?.toLowerCase().includes(q.toLowerCase())?'':'none';});};
+window.kickUser=email=>toast(`🚫 ${email.split('@')[0]} has been kicked from the server (demo)`, 'warn');
+window.banUserPrompt=email=>{showModal(`<div class="m-title">🔨 Ban User</div><div class="m-sub">Ban ${email.split('@')[0]} from FireChat</div><div class="m-field"><label>Reason</label><input class="adm-input" id="mBanReason" placeholder="Reason for ban…"></div><div class="m-acts"><button class="m-cancel" onclick="closeAdmModal()">Cancel</button><button class="m-ok" onclick="doBanUser('${email}')">🔨 Ban User</button></div>`);};
+window.doBanUser=async email=>{const r=document.getElementById('mBanReason')?.value||'';await setDoc(doc(db,'bans',email.replace(/[@.]/g,'_')),{email,reason:r,bannedBy:CU.email,createdAt:serverTimestamp()});closeAdmModal();toast(`🔨 ${email.split('@')[0]} banned!`,'suc');};
+window.showPromoteModal=email=>{showModal(`<div class="m-title">⬆ Change Role</div><div class="m-sub">Set role for ${email.split('@')[0]}</div><div class="m-field"><label>Role</label><select class="adm-select" id="mRole" style="width:100%"><option value="member">Member</option><option value="moderator">Moderator</option><option value="admin">Admin</option></select></div><div class="m-acts"><button class="m-cancel" onclick="closeAdmModal()">Cancel</button><button class="m-ok" onclick="doPromote('${email}')">Save Role</button></div>`);};
+window.doPromote=async email=>{const role=document.getElementById('mRole').value;const snap=await getDocs(query(collection(db,'presence'),where('email','==',email)));if(!snap.empty){await setDoc(doc(db,'users',snap.docs[0].id),{role,updatedAt:serverTimestamp()},{merge:true});}closeAdmModal();toast(`✅ ${email.split('@')[0]} is now ${role}`,'suc');};
+window.showAddRoleModal=()=>showModal(`<div class="m-title">+ Add Custom Role</div><div class="m-sub">Create a new server role</div><div class="m-field"><label>Role Name</label><input class="adm-input" id="mRoleName" placeholder="e.g. VIP Member"></div><div class="m-field"><label>Color</label><select class="adm-select" style="width:100%" id="mRoleColor"><option value="red">🔴 Red</option><option value="blue">🔵 Blue</option><option value="green">🟢 Green</option><option value="yellow">🟡 Yellow</option><option value="purple">🟣 Purple</option></select></div><div class="m-acts"><button class="m-cancel" onclick="closeAdmModal()">Cancel</button><button class="m-ok" onclick="closeAdmModal();toast('✅ Role created!','suc')">Create Role</button></div>`);
+window.openDMFromAdmin=email=>{toast(`Opening DM with ${email.split('@')[0]}. Switch to FireChat app.`,'warn');};
+
+/* ── MESSAGES ── */
+async function renderMessages(el){
+  el.innerHTML=`
+    <div class="panel-hdr"><div class="panel-title">Message Moderation</div><div class="panel-sub">Browse and moderate messages across all channels</div></div>
+    <div class="row">
+      ${CHANNELS.map(ch=>`<button class="ab ab-blue" onclick="loadChanMsgs('${ch}')">#${ch}</button>`).join('')}
+    </div>
+    <div id="msgModerationArea"><div class="empty"><div class="ei">💬</div><div class="et">Select a channel above</div></div></div>`;
+}
+window.loadChanMsgs=async ch=>{
+  const area=document.getElementById('msgModerationArea');
+  if(!area)return;area.innerHTML='<div class="empty"><div class="ei" style="animation:spin 1s linear infinite">⚙️</div><div class="et">Loading messages…</div></div>';
+  try{const snap=await getDocs(query(collection(db,'channels',ch,'messages'),orderBy('createdAt','desc'),limit(30)));
+  if(snap.empty){area.innerHTML='<div class="empty"><div class="ei">💬</div><div class="et">No messages in #'+ch+'</div></div>';return;}
+  area.innerHTML=`<div class="card"><div class="card-title"><span class="ct-ico">💬</span>#${ch} — Last 30 messages</div><table class="adm-tbl"><thead><tr><th>User</th><th>Message</th><th>Time</th><th>Type</th><th>Action</th></tr></thead><tbody>${snap.docs.map(d=>{const dat=d.data();const ts=dat.createdAt?.toDate?dat.createdAt.toDate().toLocaleString():'-';const preview=esc(dat.text||'[media]').slice(0,70);return`<tr><td class="text-mono" style="font-size:12px">${(dat.user||'').split('@')[0]}</td><td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px">${preview}</td><td class="text-mono" style="font-size:11px;color:var(--txdd)">${ts}</td><td><span class="badge badge-user">${dat.type||'text'}</span></td><td><button class="ab ab-red" onclick="adminDelMsg('${ch}','${d.id}')">🗑 Delete</button></td></tr>`;}).join('')}</tbody></table></div>`;
+  }catch(e){area.innerHTML='<div class="empty"><div class="ei">❌</div><div class="et">Failed to load messages</div></div>';}
+};
+window.adminDelMsg=async(ch,id)=>{if(!confirm('Delete this message?'))return;await deleteDoc(doc(db,'channels',ch,'messages',id));toast('🗑 Message deleted','suc');loadChanMsgs(ch);};
+
+/* ── CHANNELS ── */
+function renderChannels(el){
+  el.innerHTML=`
+    <div class="panel-hdr"><div class="panel-title">Channel Management</div><div class="panel-sub">Manage text channels across the server</div></div>
+    <div class="row"><button class="big-btn big-btn-red" onclick="showCreateChanModal()">+ Create Channel</button></div>
+    <div class="card">
+      <table class="adm-tbl">
+        <thead><tr><th>Icon</th><th>Channel Name</th><th>Type</th><th>Actions</th></tr></thead>
+        <tbody>${CHANNELS.map(ch=>`<tr><td style="font-size:18px">${getChIcon(ch)}</td><td class="text-mono" style="font-size:13px">#${ch}</td><td><span class="badge badge-user">Text</span></td><td><div style="display:flex;gap:5px"><button class="ab ab-blue" onclick="toast('Opening #${ch}','suc')">Open</button><button class="ab ab-yellow" onclick="toast('Rename: coming soon')">Rename</button><button class="ab ab-red" onclick="clearChannel('${ch}')">Clear</button></div></td></tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+function getChIcon(ch){const icons={general:'🌐',memes:'😂',gaming:'🎮',music:'🎵',tech:'💻',random:'🎲',announcements:'📢'};return icons[ch]||'💬';}
+window.showCreateChanModal=()=>showModal(`<div class="m-title">+ Create Channel</div><div class="m-sub">Add a new text channel</div><div class="m-field"><label>Channel Name</label><input class="adm-input" id="mChanName" placeholder="channel-name (no spaces)"></div><div class="m-field"><label>Description</label><input class="adm-input" id="mChanDesc" placeholder="What is this channel for?"></div><div class="m-acts"><button class="m-cancel" onclick="closeAdmModal()">Cancel</button><button class="m-ok" onclick="closeAdmModal();toast('✅ Channel created!','suc')">Create</button></div>`);
+window.clearChannel=ch=>{if(!confirm(`Clear ALL messages in #${ch}? This cannot be undone.`))return;toast(`⚠️ #${ch} cleared (demo — implement batch delete in production)`,'warn');};
+
+/* ── GROUPS ── */
+async function renderGroups(el){
+  const snap=await getDocs(collection(db,'groups'));
+  const grps=snap.docs.map(d=>({id:d.id,...d.data()}));
+  el.innerHTML=`
+    <div class="panel-hdr"><div class="panel-title">Group Management</div><div class="panel-sub">${grps.length} total groups</div></div>
+    <div class="card">
+      ${grps.length===0?'<div class="empty"><div class="ei">🏠</div><div class="et">No groups yet</div></div>':`<table class="adm-tbl"><thead><tr><th>Group</th><th>Members</th><th>Type</th><th>Created By</th><th>Actions</th></tr></thead><tbody>${grps.map(g=>`<tr><td><div class="ut-cell"><span style="font-size:20px">${g.icon||'🏠'}</span><div><div class="ut-name">${esc(g.name)}</div><div class="ut-email">${esc(g.desc||'No description')}</div></div></div></td><td>${(g.members||[]).length}</td><td><span class="badge ${g.privacy==='public'?'badge-user':'badge-mod'}">${g.privacy==='public'?'🌐 Public':'🔒 Private'}</span></td><td class="text-mono" style="font-size:12px">${(g.createdBy||'').split('@')[0]}</td><td><div style="display:flex;gap:5px"><button class="ab ab-red" onclick="deleteGroup('${g.id}','${esc(g.name)}')">🗑 Delete</button></div></td></tr>`).join('')}</tbody></table>`}
+    </div>`;
+}
+window.deleteGroup=async(id,name)=>{if(!confirm(`Delete group "${name}"? This cannot be undone.`))return;await deleteDoc(doc(db,'groups',id));toast(`🗑 Group "${name}" deleted`,'suc');admTab('groups');};
+
+/* ── BANS ── */
+async function renderBans(el){
+  const banSnap=await getDocs(collection(db,'bans'));
+  const bans=banSnap.docs.map(d=>({id:d.id,...d.data()}));
+  el.innerHTML=`
+    <div class="panel-hdr"><div class="panel-title">Bans &amp; Mutes</div><div class="panel-sub">Manage banned and muted users</div></div>
+    <div class="col2">
+      <div class="card">
+        <div class="card-title"><span class="ct-ico">🔨</span>Ban a User</div>
+        <div class="m-field" style="margin-bottom:10px"><input class="adm-input" id="banEmail" placeholder="Email to ban…"></div>
+        <div class="m-field" style="margin-bottom:10px"><input class="adm-input" id="banReason" placeholder="Reason…"></div>
+        <div class="m-field" style="margin-bottom:14px">
+          <select class="adm-select" id="banDur" style="width:100%">
+            <option value="permanent">♾️ Permanent</option>
+            <option value="7d">7 days</option>
+            <option value="30d">30 days</option>
+            <option value="1d">24 hours</option>
+          </select>
+        </div>
+        <button class="big-btn big-btn-red" onclick="doBan()" style="width:100%">🔨 Issue Ban</button>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="ct-ico">🔇</span>Mute a User</div>
+        <div class="m-field" style="margin-bottom:10px"><input class="adm-input" id="muteEmail" placeholder="Email to mute…"></div>
+        <div class="m-field" style="margin-bottom:14px">
+          <select class="adm-select" id="muteDur" style="width:100%">
+            <option value="10">10 minutes</option>
+            <option value="60">1 hour</option>
+            <option value="1440">24 hours</option>
+            <option value="10080">7 days</option>
+          </select>
+        </div>
+        <button class="big-btn big-btn-blue" onclick="doMute()" style="width:100%">🔇 Mute User</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="ct-ico">📋</span>Active Bans (${bans.length})</div>
+      ${bans.length===0?'<div style="color:var(--txdd);font-family:var(--fm);font-size:12px">No active bans.</div>':`<table class="adm-tbl"><thead><tr><th>Email</th><th>Reason</th><th>Duration</th><th>Banned By</th><th>Action</th></tr></thead><tbody>${bans.map(b=>`<tr><td class="text-mono" style="font-size:12px">${b.email}</td><td style="font-size:13px">${b.reason||'—'}</td><td><span class="badge badge-offline">${b.duration||'Permanent'}</span></td><td class="text-mono" style="font-size:12px">${(b.bannedBy||'').split('@')[0]}</td><td><button class="ab ab-green" onclick="doUnban('${b.id}')">✓ Unban</button></td></tr>`).join('')}</tbody></table>`}
+    </div>`;
+}
+window.doBan=async()=>{const email=document.getElementById('banEmail').value.trim();const r=document.getElementById('banReason').value.trim();const dur=document.getElementById('banDur').value;if(!email){toast('⚠️ Email required','err');return;}await setDoc(doc(db,'bans',email.replace(/[@.]/g,'_')),{email,reason:r,duration:dur,bannedBy:CU.email,createdAt:serverTimestamp()});document.getElementById('banEmail').value='';document.getElementById('banReason').value='';toast(`🔨 ${email.split('@')[0]} banned!`,'suc');admTab('bans');};
+window.doMute=()=>{const email=document.getElementById('muteEmail').value.trim();const dur=document.getElementById('muteDur').value;if(!email){toast('⚠️ Email required','err');return;}toast(`🔇 ${email.split('@')[0]} muted for ${dur} min`,'suc');document.getElementById('muteEmail').value='';};
+window.doUnban=async id=>{await deleteDoc(doc(db,'bans',id));toast('✅ User unbanned','suc');admTab('bans');};
+
+/* ── REPORTS ── */
+function renderReports(el){
+  el.innerHTML=`
+    <div class="panel-hdr"><div class="panel-title">User Reports</div><div class="panel-sub">Reported content and users</div></div>
+    <div class="card"><div class="empty"><div class="ei">✅</div><div class="et">No active reports</div><div style="font-size:13px;color:var(--txdd);font-family:var(--fm)">Reports from users will appear here</div></div></div>`;
+}
+
+/* ── ANNOUNCEMENTS ── */
+function renderAnnouncements(el){
+  el.innerHTML=`
+    <div class="panel-hdr"><div class="panel-title">Announcements</div><div class="panel-sub">Broadcast messages to channels or all users</div></div>
+    <div class="card">
+      <div class="card-title"><span class="ct-ico">📣</span>Send Announcement</div>
+      <div class="m-field"><label>Message</label><textarea class="adm-input adm-textarea" id="annText" placeholder="Write your announcement here…"></textarea></div>
+      <div class="row mt">
+        <div class="m-field" style="flex:1;margin-bottom:0">
+          <select class="adm-select" id="annTarget" style="width:100%">
+            <option value="all">📢 All Channels</option>
+            ${CHANNELS.map(c=>`<option value="${c}">#${c}</option>`).join('')}
+          </select>
+        </div>
+        <select class="adm-select" id="annType">
+          <option value="text">📝 Text</option>
+          <option value="urgent">🚨 Urgent</option>
+          <option value="maintenance">🔧 Maintenance</option>
+          <option value="update">✨ Update</option>
+        </select>
+        <button class="big-btn big-btn-red" onclick="sendAnn()">📣 Send</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="ct-ico">📜</span>Recent Announcements (Demo)</div>
+      <div class="timeline">
+        ${[{ico:'📣',msg:'Server maintenance scheduled for Sunday 2AM UTC',time:'2 hours ago',badge:'Maintenance',bc:'var(--yellow)'},{ico:'✨',msg:'New features: Profile pictures, AI assistant, 11 themes',time:'1 day ago',badge:'Update',bc:'var(--green)'},{ico:'🎉',msg:'Welcome to FireChat NEXUS v6! Enjoy the new features.',time:'3 days ago',badge:'General',bc:'var(--blue)'}].map(l=>`<div class="tl-item"><div class="tl-ico" style="background:rgba(255,255,255,0.05)">${l.ico}</div><div class="tl-content"><div class="tl-msg">${l.msg}</div><div style="display:flex;align-items:center;gap:8px"><span class="tl-time">${l.time}</span><span class="tl-badge" style="background:rgba(255,255,255,0.1);color:${l.bc};border:1px solid ${l.bc}">${l.badge}</span></div></div></div>`).join('')}
+      </div>
+    </div>`;
+}
+window.sendAnn=async()=>{
+  const text=document.getElementById('annText').value.trim();if(!text){toast('⚠️ Write a message first','err');return;}
+  const target=document.getElementById('annTarget').value;const type=document.getElementById('annType').value;
+  const prefix={text:'📣',urgent:'🚨 URGENT:',maintenance:'🔧 MAINTENANCE:',update:'✨ UPDATE:'}[type]||'📣';
+  const chans=target==='all'?CHANNELS:[target];
+  for(const ch of chans){try{await addDoc(collection(db,'channels',ch,'messages'),{text:`${prefix} ${text}`,type:'text',user:CU.email,uid:CU.uid,createdAt:serverTimestamp(),reactions:{},isAnnouncement:true});}catch(e){}}
+  document.getElementById('annText').value='';toast('📣 Announcement sent to '+chans.join(', ')+'!','suc');
+};
+
+/* ── ROLES ── */
+function renderRoles(el){
+  el.innerHTML=`
+    <div class="panel-hdr"><div class="panel-title">Roles &amp; Permissions</div><div class="panel-sub">Configure server roles and what they can do</div></div>
+    ${[
+      {name:'⚡ Super Admin',badge:'badge-admin',color:'var(--red)',perms:['All permissions','Full server control','Delete any message','Ban/unban users','Manage channels','Modify server settings','View audit logs','Broadcast to all channels']},
+      {name:'🛡️ Moderator',badge:'badge-mod',color:'var(--yellow)',perms:['Delete messages','Mute users (temp)','Kick users','View reports','Access mod logs']},
+      {name:'✅ Member',badge:'badge-user',color:'var(--blue)',perms:['Send messages','React to messages','Share GIFs & stickers','Create groups','Add friends','Change own profile','Use AI assistant']},
+    ].map(r=>`<div class="card"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><div class="card-title" style="margin-bottom:0">${r.name}</div><div style="display:flex;gap:8px"><span class="badge ${r.badge}">${r.name.split(' ').slice(-1)[0]}</span><button class="ab ab-yellow" onclick="toast('Role editor: coming soon')">Edit</button></div></div><div style="display:flex;gap:7px;flex-wrap:wrap">${r.perms.map(p=>`<span style="padding:4px 10px;border-radius:100px;background:var(--s2);border:1px solid var(--b);font-size:11px;color:var(--txd);font-family:var(--fm)">✓ ${p}</span>`).join('')}</div></div>`).join('')}`;
+}
+
+/* ── SETTINGS ── */
+function renderSettings(el){
+  el.innerHTML=`
+    <div class="panel-hdr"><div class="panel-title">Server Settings</div><div class="panel-sub">Configure global server behavior and security</div></div>
+    <div class="col2">
+      <div class="card">
+        <div class="card-title"><span class="ct-ico">🔒</span>Security</div>
+        ${[{l:'Email Verification Required',d:'Users must verify email to chat',on:false},{l:'Two-Factor Auth (2FA)',d:'Require 2FA for admin accounts',on:true},{l:'Message Encryption',d:'End-to-end message encryption',on:true},{l:'Anti-Spam Filter',d:'Auto-detect and block spam',on:true},{l:'Profanity Filter',d:'Block offensive language',on:false},{l:'Rate Limiting',d:'Max 5 messages per 3 seconds',on:true}].map(s=>`<div class="toggle-row"><div class="toggle-info"><div class="toggle-label">${s.l}</div><div class="toggle-desc">${s.d}</div></div><div class="toggle-sw${s.on?' on':''}" onclick="this.classList.toggle('on')"></div></div>`).join('')}
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="ct-ico">💬</span>Messaging</div>
+        ${[{l:'GIF Sharing',d:'Allow users to share GIFs',on:true},{l:'File Uploads',d:'Allow file attachments',on:false},{l:'Reactions',d:'Allow emoji reactions on messages',on:true},{l:'Message Pinning',d:'Allow users to pin messages',on:true},{l:'Reply Threads',d:'Allow replying to messages',on:true},{l:'Message Editing',d:'Allow users to edit their messages',on:false}].map(s=>`<div class="toggle-row"><div class="toggle-info"><div class="toggle-label">${s.l}</div><div class="toggle-desc">${s.d}</div></div><div class="toggle-sw${s.on?' on':''}" onclick="this.classList.toggle('on')"></div></div>`).join('')}
+      </div>
+    </div>
+    <div class="col2">
+      <div class="card">
+        <div class="card-title"><span class="ct-ico">👤</span>User Features</div>
+        ${[{l:'Profile Picture Upload',d:'Allow custom profile photos',on:true},{l:'Custom Display Names',d:'Users can set a display name',on:true},{l:'Friend Requests',d:'Allow sending friend requests',on:true},{l:'Group Creation',d:'Allow users to create groups',on:true},{l:'AI Assistant',d:'Enable NexusAI for all users',on:true}].map(s=>`<div class="toggle-row"><div class="toggle-info"><div class="toggle-label">${s.l}</div><div class="toggle-desc">${s.d}</div></div><div class="toggle-sw${s.on?' on':''}" onclick="this.classList.toggle('on')"></div></div>`).join('')}
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="ct-ico">🌐</span>Server Info</div>
+        <div class="m-field" style="margin-bottom:12px"><label>Server Name</label><input class="adm-input" value="FireChat NEXUS"></div>
+        <div class="m-field" style="margin-bottom:12px"><label>Server Description</label><textarea class="adm-input" rows="3">A futuristic real-time chat platform powered by Firebase &amp; AI.</textarea></div>
+        <div class="m-field" style="margin-bottom:12px"><label>Max Users Per Group</label><input class="adm-input" type="number" value="50"></div>
+        <button class="big-btn big-btn-red" onclick="toast('✅ Settings saved!','suc')" style="width:100%;margin-top:6px">💾 Save All Settings</button>
+      </div>
+    </div>`;
+}
+
+/* ── LOGS ── */
+function renderLogs(el){
+  const logItems=[
+    {ico:'👤',msg:'User registered: user@gmail.com',time:'Just now',type:'info'},
+    {ico:'💬',msg:'Message deleted in #general by admin',time:'3 min ago',type:'mod'},
+    {ico:'🔨',msg:'User banned: spammer@gmail.com (Spam)',time:'8 min ago',type:'warn'},
+    {ico:'🔇',msg:'User muted: troll@gmail.com (1 hour)',time:'15 min ago',type:'warn'},
+    {ico:'📣',msg:'Announcement sent to all channels by admin',time:'1 hour ago',type:'info'},
+    {ico:'⚙️',msg:'Server settings updated by admin',time:'2 hours ago',type:'info'},
+    {ico:'🏠',msg:'New group created: Study Squad (private)',time:'3 hours ago',type:'info'},
+    {ico:'⬆',msg:'User promoted to Moderator: mod@gmail.com',time:'5 hours ago',type:'mod'},
+    {ico:'👥',msg:'Friend request accepted: user1 ↔ user2',time:'6 hours ago',type:'info'},
+    {ico:'🔑',msg:'Admin login from IP 197.xxx.xxx.xxx',time:'8 hours ago',type:'security'},
+  ];
+  const typColors={info:'var(--blue)',mod:'var(--yellow)',warn:'var(--red)',security:'var(--purple)'};
+  el.innerHTML=`
+    <div class="panel-hdr"><div class="panel-title">Audit Logs</div><div class="panel-sub">All admin and system actions recorded here</div></div>
+    <div class="search-bar-row">
+      <div class="search-wrap"><span class="search-ico">🔍</span><input class="search-in" placeholder="Filter logs…"></div>
+      <button class="ab ab-red" onclick="toast('Logs cleared (demo)','warn')">🗑 Clear Logs</button>
+      <button class="ab ab-blue" onclick="toast('Exporting… (demo)')">⬇ Export CSV</button>
+    </div>
+    <div class="card">
+      <div class="timeline">${logItems.map(l=>`<div class="tl-item"><div class="tl-ico" style="background:rgba(255,255,255,0.04);border:1px solid var(--b)">${l.ico}</div><div class="tl-content"><div class="tl-msg">${l.msg}</div><div style="display:flex;align-items:center;gap:8px;margin-top:4px"><span class="tl-time">${l.time}</span><span style="padding:2px 8px;border-radius:100px;font-size:10px;font-weight:700;font-family:var(--fm);color:${typColors[l.type]};border:1px solid ${typColors[l.type]};background:${typColors[l.type]}22">${l.type.toUpperCase()}</span></div></div></div>`).join('')}
+      </div>
+    </div>`;
+}
+
+/* ── LIVE MONITOR ── */
+async function renderMonitor(el){
+  const online=allPresence.filter(u=>u.online);
+  const typing=allPresence.filter(u=>u.typing);
+  const activities=[
+    {color:'var(--green)',txt:'User online: '+((allPresence.find(u=>u.online)?.email||'').split('@')[0]||'—'),t:'just now'},
+    {color:'var(--blue)',txt:'Message sent in #general',t:'12s ago'},
+    {color:'var(--purple)',txt:'New friend request submitted',t:'34s ago'},
+    {color:'var(--yellow)',txt:'Group "Study Squad" message',t:'1m ago'},
+    {color:'var(--green)',txt:'User joined: newuser@gmail.com',t:'2m ago'},
+    {color:'var(--red)',txt:'Failed login attempt blocked',t:'3m ago'},
+    {color:'var(--blue)',txt:'Message sent in #gaming',t:'4m ago'},
+    {color:'var(--orange)',txt:'Profile picture updated',t:'5m ago'},
+    {color:'var(--purple)',txt:'New group created: Movie Night',t:'8m ago'},
+    {color:'var(--green)',txt:'User came online: friend@gmail.com',t:'10m ago'},
+  ];
+  el.innerHTML=`
+    <div class="panel-hdr"><div class="panel-title">📡 Live Monitor</div><div class="panel-sub">Real-time server activity feed</div></div>
+    <div class="monitor-grid">
+      <div class="monitor-card"><div class="monitor-live"><div class="live-dot"></div>Live</div><div style="font-family:var(--fd);font-size:38px;font-weight:800;color:var(--green)" id="monOnline">${online.length}</div><div style="font-size:12px;color:var(--txd);font-family:var(--fm)">Users Online</div></div>
+      <div class="monitor-card"><div style="font-family:var(--fd);font-size:38px;font-weight:800;color:var(--blue)">${allPresence.length}</div><div style="font-size:12px;color:var(--txd);font-family:var(--fm)">Total Registered</div></div>
+      <div class="monitor-card"><div style="font-family:var(--fd);font-size:38px;font-weight:800;color:var(--yellow)">${typing.length}</div><div style="font-size:12px;color:var(--txd);font-family:var(--fm)">Currently Typing</div></div>
+      <div class="monitor-card"><div style="font-family:var(--fd);font-size:38px;font-weight:800;color:var(--purple)">${Math.round((online.length/Math.max(allPresence.length,1))*100)}%</div><div style="font-size:12px;color:var(--txd);font-family:var(--fm)">Active Rate</div></div>
+    </div>
+    <div class="col2">
+      <div class="card">
+        <div class="card-title"><span class="ct-ico">⚡</span>Live Activity Feed</div>
+        <div class="activity-feed">${activities.map(a=>`<div class="af-item"><div class="af-dot" style="background:${a.color}"></div><div class="af-txt">${a.txt}</div><div class="af-time">${a.t}</div></div>`).join('')}</div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="ct-ico">🟢</span>Online Users (${online.length})</div>
+        <div style="display:flex;flex-direction:column;gap:6px;max-height:320px;overflow-y:auto">
+          ${online.map(u=>`<div style="display:flex;align-items:center;gap:9px;padding:8px 11px;background:var(--s);border:1px solid rgba(74,222,128,.15);border-radius:10px">
+            <div style="width:9px;height:9px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite;flex-shrink:0"></div>
+            <div style="font-size:13px;font-weight:500;flex:1">${esc(u.email?.split('@')[0]||'?')}</div>
+            <div style="font-size:11px;color:var(--txdd);font-family:var(--fm)">${u.typing?'✍️ typing':''}</div>
+            <button class="ab ab-red" style="padding:4px 9px;font-size:11px" onclick="kickUser('${u.email}')">Kick</button>
+          </div>`).join('') || '<div style="color:var(--txdd);font-family:var(--fm);font-size:12px">No users online</div>'}
+        </div>
+      </div>
+    </div>`;
+  // Auto-refresh every 10s
+  setTimeout(()=>{if(curSection==='monitor')admTab('monitor');},10000);
+}
+
+/* ── BACKUP ── */
+function renderBackup(el){
+  const backups=[
+    {name:'Full Database Backup',size:'2.4 MB',date:'Today 03:00 UTC',status:'success'},
+    {name:'User Data Export',size:'0.8 MB',date:'Yesterday 03:00 UTC',status:'success'},
+    {name:'Message Archive',size:'8.1 MB',date:'3 days ago',status:'success'},
+    {name:'Media URLs Backup',size:'0.3 MB',date:'7 days ago',status:'success'},
+  ];
+  el.innerHTML=`
+    <div class="panel-hdr"><div class="panel-title">💾 Data Backup</div><div class="panel-sub">Manage server backups and exports</div></div>
+    <div class="row" style="margin-bottom:20px">
+      <button class="big-btn big-btn-red" onclick="toast('⏳ Starting backup… (demo)','warn')">💾 Create Backup Now</button>
+      <button class="big-btn big-btn-blue" onclick="toast('📤 Exporting user data… (demo)')">📤 Export User Data</button>
+      <button class="ab ab-green" style="padding:12px 18px;font-size:13px" onclick="toast('📊 Exporting messages… (demo)')">📊 Export Messages CSV</button>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="ct-ico">📂</span>Backup History</div>
+      ${backups.map(b=>`<div class="backup-item"><div class="bi-left"><div class="bi-ico">💾</div><div><div class="bi-name">${b.name}</div><div class="bi-size">${b.size} · ${b.date}</div></div></div><div style="display:flex;align-items:center;gap:8px"><span class="badge badge-online">✓ ${b.status}</span><button class="ab ab-blue" onclick="toast('⬇ Downloading ${b.name}… (demo)')">⬇ Download</button><button class="ab ab-red" onclick="toast('🗑 Backup deleted (demo)')">🗑</button></div></div>`).join('')}
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="ct-ico">⚙️</span>Backup Schedule</div>
+      <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Auto Daily Backup</div><div class="toggle-desc">Backup every day at 3:00 AM UTC</div></div><div class="toggle-sw on" onclick="this.classList.toggle('on')"></div></div>
+      <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Include Media URLs</div><div class="toggle-desc">Include GIF and image links in backup</div></div><div class="toggle-sw on" onclick="this.classList.toggle('on')"></div></div>
+      <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Email Backup Report</div><div class="toggle-desc">Send summary to admin email after backup</div></div><div class="toggle-sw" onclick="this.classList.toggle('on')"></div></div>
+      <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Keep 30-day History</div><div class="toggle-desc">Auto-delete backups older than 30 days</div></div><div class="toggle-sw on" onclick="this.classList.toggle('on')"></div></div>
+    </div>`;
+}
+
+/* ── WEBHOOKS ── */
+function renderWebhooks(el){
+  el.innerHTML=`
+    <div class="panel-hdr"><div class="panel-title">🔗 Webhooks</div><div class="panel-sub">Connect FireChat to external services</div></div>
+    <div class="card">
+      <div class="card-title"><span class="ct-ico">➕</span>Add New Webhook</div>
+      <div class="m-field" style="margin-bottom:10px"><input class="adm-input" id="whUrl" placeholder="https://hooks.slack.com/services/…"></div>
+      <div class="row">
+        <select class="adm-select" id="whEvent"><option value="new_user">New User Joined</option><option value="message">New Message</option><option value="ban">User Banned</option><option value="report">New Report</option><option value="group">New Group Created</option></select>
+        <button class="big-btn big-btn-red" onclick="addWebhook()">+ Add Webhook</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="ct-ico">🔗</span>Active Webhooks</div>
+      <div class="wh-item"><div style="display:flex;align-items:center;justify-content:space-between"><div style="font-size:13px;font-weight:600">Slack Integration</div><div style="display:flex;gap:7px"><span class="badge badge-online">Active</span><button class="ab ab-yellow" onclick="toast('Webhook tested!','suc')">Test</button><button class="ab ab-red" onclick="this.closest('.wh-item').remove();toast('Webhook removed')">Remove</button></div></div><div class="wh-url">https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXX</div><div style="font-size:11px;color:var(--txdd);font-family:var(--fm)">Triggers: New User, Ban</div></div>
+      <div class="wh-item"><div style="display:flex;align-items:center;justify-content:space-between"><div style="font-size:13px;font-weight:600">Discord Webhook</div><div style="display:flex;gap:7px"><span class="badge badge-online">Active</span><button class="ab ab-yellow" onclick="toast('Webhook tested!','suc')">Test</button><button class="ab ab-red" onclick="this.closest('.wh-item').remove();toast('Webhook removed')">Remove</button></div></div><div class="wh-url">https://discord.com/api/webhooks/000000000/XXXXXXXXXX</div><div style="font-size:11px;color:var(--txdd);font-family:var(--fm)">Triggers: All Events</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="ct-ico">📋</span>Webhook Event Log</div>
+      ${[{ico:'✅',msg:'Slack: new_user event fired → user@gmail.com',t:'2m ago'},{ico:'✅',msg:'Discord: message event fired → #general',t:'5m ago'},{ico:'❌',msg:'Slack: ban event → connection timeout',t:'1h ago'},{ico:'✅',msg:'Discord: new_user event fired → test@gmail.com',t:'2h ago'}].map(l=>`<div class="af-item"><div class="af-dot" style="background:${l.ico==='✅'?'var(--green)':'var(--red)'}"></div><div class="af-txt">${l.msg}</div><div class="af-time">${l.t}</div></div>`).join('')}
+    </div>`;
+}
+
+/* ── BROADCAST MODAL ── */
+window.showBroadcastModal=()=>showModal(`<div class="m-title">📣 Broadcast Message</div><div class="m-sub">Send a message to all channels instantly</div><div class="m-field"><label>Message</label><textarea class="adm-input adm-textarea" id="mbcText" placeholder="Write your broadcast…"></textarea></div><div class="m-field"><label>Type</label><select class="adm-select" id="mbcType" style="width:100%"><option value="text">📝 General</option><option value="urgent">🚨 Urgent Alert</option><option value="maintenance">🔧 Maintenance</option><option value="update">✨ Feature Update</option></select></div><div class="m-acts"><button class="m-cancel" onclick="closeAdmModal()">Cancel</button><button class="m-ok" onclick="doBroadcast()">📣 Broadcast</button></div>`);
+window.doBroadcast=async()=>{const text=document.getElementById('mbcText').value.trim();if(!text){toast('⚠️ Write a message','err');return;}const type=document.getElementById('mbcType').value;const prefix={text:'📣',urgent:'🚨 URGENT:',maintenance:'🔧 MAINTENANCE:',update:'✨ UPDATE:'}[type]||'📣';for(const ch of CHANNELS){try{await addDoc(collection(db,'channels',ch,'messages'),{text:`${prefix} ${text}`,type:'text',user:CU.email,uid:CU.uid,createdAt:serverTimestamp(),reactions:{},isAnnouncement:true});}catch(e){}}closeAdmModal();toast('📣 Broadcast sent to all channels!','suc');};
+
+/* ── MODAL HELPERS ── */
+function showModal(html){const c=document.getElementById('modalContainer');c.innerHTML=`<div class="m-overlay" onclick="closeAdmModal()"><div class="m-box" onclick="event.stopPropagation()">${html}</div></div>`;}
+window.closeAdmModal=()=>{document.getElementById('modalContainer').innerHTML='';};
+window.addWebhook=()=>{const url=document.getElementById('whUrl')?.value.trim();if(!url||!url.startsWith('http')){toast('⚠️ Enter a valid URL','err');return;}toast('✅ Webhook added!','suc');document.getElementById('whUrl').value='';};
+
+/* ── TOAST ── */
+window.toast=(msg,type='')=>{const t=document.getElementById('toast');t.textContent=msg;t.className='';if(type)t.classList.add(type);t.classList.add('on');setTimeout(()=>t.classList.remove('on','suc','err','warn'),2800);};
+
+/* ── UTILS ── */
+function esc(str){if(!str)return'';return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');}
+</script>
+</body>
+</html>
